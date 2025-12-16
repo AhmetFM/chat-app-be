@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String   // hashed password
+  name          String
+  profileImage  String?
+  createdAt     DateTime @default(now())
+
+  // Chat relations
+  conversations1 Conversation[] @relation("User1Conversations")
+  conversations2 Conversation[] @relation("User2Conversations")
+  messages      Message[]
+
+  // Friends
+  sentFriendRequests     FriendRequest[] @relation("SentFriendRequests")
+  receivedFriendRequests FriendRequest[] @relation("ReceivedFriendRequests")
+
+  friendsA Friendship[] @relation("UserAFriends")
+  friendsB Friendship[] @relation("UserBFriends")
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  user1Id   String
+  user2Id   String
+  createdAt DateTime @default(now())
+
+  user1     User @relation("User1Conversations", fields: [user1Id], references: [id])
+  user2     User @relation("User2Conversations", fields: [user2Id], references: [id])
+
+  messages  Message[]
+
+  // Aynı iki kullanıcı için ikinci conversation oluşmasın
+  @@unique([user1Id, user2Id])
+}
+
+model Message {
+  id             String    @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime  @default(now())
+  isRead         Boolean   @default(false)
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  sender         User         @relation(fields: [senderId], references: [id])
+}
+
+//
+// ------------------------------
+// FRIENDSHIP SYSTEM
+// ------------------------------
+//
+
+model FriendRequest {
+  id          String   @id @default(uuid())
+  senderId    String
+  receiverId  String
+  status      FriendRequestStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("SentFriendRequests", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedFriendRequests", fields: [receiverId], references: [id])
+
+  // Bir istek bir kere olmalı
+  @@unique([senderId, receiverId])
+}
+
+model Friendship {
+  id        String   @id @default(uuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+
+  userA     User @relation("UserAFriends", fields: [userAId], references: [id])
+  userB     User @relation("UserBFriends", fields: [userBId], references: [id])
+
+  // Aynı iki kullanıcı iki kez arkadaş olamasın
+  @@unique([userAId, userBId])
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
