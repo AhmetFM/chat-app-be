@@ -7,6 +7,7 @@
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -36,17 +37,17 @@ model User {
 
 model Conversation {
   id        String   @id @default(uuid())
-  user1Id   String
-  user2Id   String
+  userAId   String
+  userBId   String
   createdAt DateTime @default(now())
+  lastMessageAt DateTime?
 
-  user1     User @relation("User1Conversations", fields: [user1Id], references: [id])
-  user2     User @relation("User2Conversations", fields: [user2Id], references: [id])
+  userA     User @relation("User1Conversations", fields: [userAId], references: [id])
+  userB     User @relation("User2Conversations", fields: [userBId], references: [id])
 
   messages  Message[]
 
-  // Aynı iki kullanıcı için ikinci conversation oluşmasın
-  @@unique([user1Id, user2Id])
+  @@unique([userAId, userBId])
 }
 
 model Message {
