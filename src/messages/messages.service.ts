@@ -35,7 +35,10 @@ export class MessagesService {
       }),
       this.prisma.conversation.update({
         where: { id: conversationId },
-        data: { lastMessageAt: new Date() },
+        data: {
+          lastMessageAt: new Date(),
+          lastMessage: content,
+        },
       }),
     ]);
   }

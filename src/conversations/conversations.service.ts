@@ -70,6 +70,7 @@ export class ConversationsService {
             name: true,
             profileImage: true,
             email: true,
+            aboutMe: true,
           },
         },
         userB: {
@@ -78,6 +79,7 @@ export class ConversationsService {
             name: true,
             profileImage: true,
             email: true,
+            aboutMe: true,
           },
         },
       },

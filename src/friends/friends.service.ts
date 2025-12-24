@@ -63,6 +63,27 @@ export class FriendsService {
             name: true,
             email: true,
             profileImage: true,
+            aboutMe: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getMyPendingRequests(userId: string) {
+    return this.prisma.friendRequest.findMany({
+      where: {
+        senderId: userId,
+        status: 'PENDING',
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            profileImage: true,
+            aboutMe: true,
           },
         },
       },
@@ -125,6 +146,22 @@ export class FriendsService {
       },
     });
 
-    return friendships.map((f) => (f.userAId === userId ? f.userB : f.userA));
+    return friendships.map((f) =>
+      f.userAId === userId
+        ? {
+            id: f.userB.id,
+            name: f.userB.name,
+            email: f.userB.email,
+            profileImage: f.userB.profileImage,
+            aboutMe: f.userB.aboutMe,
+          }
+        : {
+            id: f.userA.id,
+            name: f.userA.name,
+            email: f.userA.email,
+            profileImage: f.userA.profileImage,
+            aboutMe: f.userA.aboutMe,
+          },
+    );
   }
 }

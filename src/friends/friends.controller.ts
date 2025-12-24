@@ -21,6 +21,11 @@ export class FriendsController {
     return this.friendsService.getPendingRequests(user.userId);
   }
 
+  @Get('requests/me')
+  getMyRequests(@CurrentUser() user) {
+    return this.friendsService.getMyPendingRequests(user.userId);
+  }
+
   // POST /friends/respond/:requestId
   @Post('respond/:requestId')
   respond(
