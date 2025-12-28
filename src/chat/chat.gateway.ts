@@ -29,7 +29,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: Socket) {
     try {
-      console.log('HANDSHAKE AUTH ', client.handshake.auth);
+      //console.log('HANDSHAKE AUTH ', client.handshake.auth);
       const token = client.handshake.auth.token;
 
       if (!token) {
@@ -39,11 +39,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       const payload = this.jwtService.verify(token);
-      console.log('JWT_PAYLOAD', payload);
+      //console.log('JWT_PAYLOAD', payload);
       client.data.userId = payload.sub;
 
       //User joins to room
-      //client.join(payload.sub);
+      client.join(`user:${payload.sub}`);
+
       console.log('User connected:', payload.sub);
     } catch (err) {
       console.log('JWT_VERIFY_ERROR', err.message);
@@ -76,6 +77,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+    console.log('USER JOINED ROOM:', conversationId);
     client.join(conversationId);
   }
 
@@ -84,7 +86,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { conversationId: string; content: string },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log('Message Received');
+    console.log('EMIT TO ROOM:', data.conversationId);
     const userId = client.data.userId;
 
     const [message] = await this.messagesService.sendMessage(
@@ -93,7 +95,30 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       data.content,
     );
 
-    //this.server.to(data.conversationId).emit('new_message', message);
+    await this.prisma.conversation.update({
+      where: {
+        id: data.conversationId,
+      },
+      data: {
+        lastMessage: data.content,
+        lastMessageAt: new Date(),
+      },
+    });
+
+    this.server.to(data.conversationId).emit('message:new', {
+      message: {
+        id: message.id,
+        content: message.content,
+        senderId: message.senderId,
+        conversationId: message.conversationId,
+        createdAt: message.createdAt,
+      },
+      conversation: {
+        id: data.conversationId,
+        lastMessage: data.content,
+        lastMessageAt: message.createdAt,
+      },
+    });
     client.broadcast.to(data.conversationId).emit('new_message', message);
   }
 }

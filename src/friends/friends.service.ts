@@ -47,6 +47,17 @@ export class FriendsService {
         senderId,
         receiverId,
       },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            profileImage: true,
+            aboutMe: true,
+          },
+        },
+      },
     });
   }
 
@@ -77,7 +88,7 @@ export class FriendsService {
         status: 'PENDING',
       },
       include: {
-        sender: {
+        receiver: {
           select: {
             id: true,
             name: true,
@@ -97,6 +108,10 @@ export class FriendsService {
   ) {
     const request = await this.prisma.friendRequest.findUnique({
       where: { id: requestId },
+      include: {
+        sender: true,
+        receiver: true,
+      },
     });
 
     if (!request) {
@@ -115,6 +130,10 @@ export class FriendsService {
       return this.prisma.friendRequest.update({
         where: { id: requestId },
         data: { status: 'REJECTED' },
+        include: {
+          sender: true,
+          receiver: true,
+        },
       });
     }
 
@@ -123,6 +142,10 @@ export class FriendsService {
       this.prisma.friendRequest.update({
         where: { id: requestId },
         data: { status: 'ACCEPTED' },
+        include: {
+          sender: true,
+          receiver: true,
+        },
       }),
       this.prisma.friendship.create({
         data: {
@@ -132,7 +155,13 @@ export class FriendsService {
       }),
     ]);
 
-    return { success: true };
+    return {
+      success: true,
+      senderId: request.senderId,
+      receiverId: request.receiverId,
+      sender: request.sender,
+      receiver: request.receiver,
+    };
   }
 
   async getFriends(userId: string) {

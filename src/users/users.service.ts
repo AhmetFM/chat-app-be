@@ -47,6 +47,7 @@ export class UsersService {
         profileImage: true,
         aboutMe: true,
         receivedFriendRequests: true,
+        sentFriendRequests: true,
       },
     });
   }

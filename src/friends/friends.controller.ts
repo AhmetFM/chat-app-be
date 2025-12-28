@@ -3,16 +3,25 @@ import { FriendsService } from './friends.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { RespondFriendRequestDto } from './dto/respond-friend-request.dto';
+import { FriendsGateway } from './friends.gateway';
 
 @UseGuards(JwtAuthGuard)
 @Controller('friends')
 export class FriendsController {
-  constructor(private friendsService: FriendsService) {}
+  constructor(
+    private friendsService: FriendsService,
+    private friendsGateway: FriendsGateway,
+  ) {}
 
   //POST /friends/request/:userId
   @Post('request/:userId')
-  sendRequest(@Param('userId') receiverId: string, @CurrentUser() user) {
-    return this.friendsService.sendRequest(user.userId, receiverId);
+  async sendRequest(@Param('userId') receiverId: string, @CurrentUser() user) {
+    const request = await this.friendsService.sendRequest(
+      user.userId,
+      receiverId,
+    );
+    this.friendsGateway.emitFriendRequestCreated(request);
+    return request;
   }
 
   // GET /friends/requests
@@ -22,22 +31,41 @@ export class FriendsController {
   }
 
   @Get('requests/me')
-  getMyRequests(@CurrentUser() user) {
+  getOutgoingRequests(@CurrentUser() user) {
     return this.friendsService.getMyPendingRequests(user.userId);
   }
 
   // POST /friends/respond/:requestId
   @Post('respond/:requestId')
-  respond(
+  async respond(
     @Param('requestId') requestId: string,
     @Body() dto: RespondFriendRequestDto,
     @CurrentUser() user,
   ) {
-    return this.friendsService.respondToRequest(
+    const result = await this.friendsService.respondToRequest(
       requestId,
       user.userId,
       dto.action,
     );
+
+    if (dto.action === 'REJECT') {
+      this.friendsGateway.emitFriendRequestRejected({
+        requestId,
+        senderId: result.senderId,
+        receiverId: result.receiverId,
+      });
+    }
+
+    if (dto.action === 'ACCEPT') {
+      this.friendsGateway.emitFriendRequestAccepted({
+        senderId: result.senderId,
+        receiverId: result.receiverId,
+        sender: result.sender,
+        receiver: result.receiver,
+      });
+    }
+
+    return result;
   }
 
   // GET /friends
