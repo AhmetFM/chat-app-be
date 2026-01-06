@@ -84,9 +84,9 @@ Payload:
 ## 👥 Friends
 
 | Event                     | Description        |
-| ------------------------- | ------------------ | --- |
-| `friend:request_sent`     | Sent to receiver   |     |
-| `friend:request_accepted` | Sent to both users |     |
+| ------------------------- | ------------------ |
+| `friend:request_sent`     | Sent to receiver   |
+| `friend:request_accepted` | Sent to both users |
 | `friend:request_rejected` | Sent to sender     |
 
 ---
